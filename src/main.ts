@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import {
   TypeSIE,
   TypeSIE_VER_EXPORT,
@@ -9,43 +8,54 @@ import {
 class sieParser {
   private sie: string[];
   public sieObject: TypeSIE;
-  constructor(path: string) {
-    const buffer = readFileSync(`${path}`);
-    const parsed = this.string(buffer);
+  constructor(parsed: string) {
     this.sie = this.sieLines(parsed);
     this.sieObject = this.parse();
   }
 
-  private string(buffer: Buffer) {
-    // Thanks @piksel for this function ;)
-    const mapUTF8 =
-      'ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
+  // private string(buffer: Buffer) {
+  //   // Thanks @piksel for this function ;)
+  //   const mapUTF8 =
+  //     'ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
 
-    return Array.from(buffer)
-      .map((b) =>
-        b < 128 ? String.fromCharCode(b) : mapUTF8.substr(b - 128, 1)
-      )
-      .join('');
-  }
+  //   return Array.from(buffer)
+  //     .map((b) =>
+  //       b < 128 ? String.fromCharCode(b) : mapUTF8.substr(b - 128, 1)
+  //     )
+  //     .join('');
+  // }
 
   private sieLineParser(str: string): string[] {
-    const result = [];
-    let current = '';
+    const result: Array<string> = [];
+    let current = "";
     let inQuotes = false;
-    let inBrackets = false;
+    let inBrackets = 0;
+
     for (let i = 0; i < str.length; i++) {
       if (str[i] === '"') {
         inQuotes = !inQuotes;
         continue;
       }
-      if (str[i] === ' ' && !inQuotes && !inBrackets) {
-        result.push(current);
-        current = '';
+      if (str[i] === "{") {
+        inBrackets++;
+      }
+      if (str[i] === "}") {
+        inBrackets--;
+      }
+      if (str[i] === " " && !inQuotes && inBrackets === 0) {
+        if (current.length > 0) {
+          result.push(current);
+          current = "";
+        }
       } else {
         current += str[i];
       }
     }
-    result.push(current);
+
+    if (current.length > 0) {
+      result.push(current);
+    }
+
     return result;
   }
 
@@ -403,7 +413,7 @@ class sieParser {
     let returnObj: TypeSIE_KONTO_EXPORT = {};
     kontonr = kontonr.toString();
     const kontoDesc: TypeSIE_KONTO | undefined = this.sieObject.KONTO?.find(
-      (e) => e.kontonr === kontonr
+      (e:any) => e.kontonr === kontonr
     );
     if (!kontoDesc) return undefined;
 
