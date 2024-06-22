@@ -1,65 +1,62 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-var fs_1 = require("fs");
-var sieParser = /** @class */ (function () {
-    function sieParser(path) {
-        var buffer = (0, fs_1.readFileSync)("" + path);
-        var parsed = this.string(buffer);
+class sieParser {
+    constructor(parsed) {
         this.sie = this.sieLines(parsed);
         this.sieObject = this.parse();
     }
-    sieParser.prototype.string = function (buffer) {
-        // Thanks @piksel for this function ;)
-        var mapUTF8 = 'ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
-        return Array.from(buffer)
-            .map(function (b) {
-            return b < 128 ? String.fromCharCode(b) : mapUTF8.substr(b - 128, 1);
-        })
-            .join('');
-    };
-    sieParser.prototype.sieLineParser = function (str) {
-        var result = [];
-        var current = '';
-        var inQuotes = false;
-        var inBrackets = false;
-        for (var i = 0; i < str.length; i++) {
+    // private string(buffer: Buffer) {
+    //   // Thanks @piksel for this function ;)
+    //   const mapUTF8 =
+    //     'ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
+    //   return Array.from(buffer)
+    //     .map((b) =>
+    //       b < 128 ? String.fromCharCode(b) : mapUTF8.substr(b - 128, 1)
+    //     )
+    //     .join('');
+    // }
+    sieLineParser(str) {
+        const result = [];
+        let current = "";
+        let inQuotes = false;
+        let inBrackets = 0;
+        for (let i = 0; i < str.length; i++) {
             if (str[i] === '"') {
                 inQuotes = !inQuotes;
                 continue;
             }
-            if (str[i] === ' ' && !inQuotes && !inBrackets) {
-                result.push(current);
-                current = '';
+            if (str[i] === "{") {
+                inBrackets++;
+            }
+            if (str[i] === "}") {
+                inBrackets--;
+            }
+            if (str[i] === " " && !inQuotes && inBrackets === 0) {
+                if (current.length > 0) {
+                    result.push(current);
+                    current = "";
+                }
             }
             else {
                 current += str[i];
             }
         }
-        result.push(current);
+        if (current.length > 0) {
+            result.push(current);
+        }
         return result;
-    };
-    sieParser.prototype.sieLines = function (str) {
+    }
+    sieLines(str) {
         return str.split('\n');
-    };
-    sieParser.prototype.parse = function () {
+    }
+    parse() {
         var _a, _b, _c, _d, _e, _f, _g;
-        var sie = { VER: {} };
-        var inBrackets = false;
-        var currentBracketName = '';
-        for (var i = 0; i < this.sie.length; i++) {
-            var e = this.sie[i];
-            var values = this.sieLineParser(e.trim());
-            var indexProp = values[0].replace('#', '');
+        const sie = { VER: {} };
+        let inBrackets = false;
+        let currentBracketName = '';
+        for (let i = 0; i < this.sie.length; i++) {
+            const e = this.sie[i];
+            const values = this.sieLineParser(e.trim());
+            const indexProp = values[0].replace('#', '');
             if (e[0] === '{') {
                 inBrackets = true;
                 continue;
@@ -69,7 +66,7 @@ var sieParser = /** @class */ (function () {
                 continue;
             }
             if (indexProp === 'VER') {
-                var objectName = values[1] + values[2];
+                const objectName = values[1] + values[2];
                 currentBracketName = objectName;
                 sie.VER[objectName] = {
                     serie: values[1],
@@ -190,14 +187,14 @@ var sieParser = /** @class */ (function () {
                 case 'OIB':
                     {
                         // TODO: Test this function with real SIE files
-                        var _h = values[3]
+                        const [dimensionsnr, objektnr] = values[3]
                             .replace('"', ' ')
                             .trim()
-                            .split(' '), dimensionsnr = _h[0], objektnr = _h[1];
+                            .split(' ');
                         sie.OIB = {
                             årsnr: values[1],
                             konto: values[2],
-                            objectspecifikation: { dimensionsnr: dimensionsnr, objektnr: objektnr },
+                            objectspecifikation: { dimensionsnr, objektnr },
                             saldo: values[4],
                             kvantitet: values[5],
                         };
@@ -216,14 +213,14 @@ var sieParser = /** @class */ (function () {
                 case 'OUB':
                     {
                         // TODO: Test this function with real SIE files
-                        var _j = values[3]
+                        const [dimensionsnr, objektnr] = values[3]
                             .replace('"', ' ')
                             .trim()
-                            .split(' '), dimensionsnr = _j[0], objektnr = _j[1];
+                            .split(' ');
                         sie.OUB = {
                             årsnr: values[1],
                             konto: values[2],
-                            objectspecifikation: { dimensionsnr: dimensionsnr, objektnr: objektnr },
+                            objectspecifikation: { dimensionsnr, objektnr },
                             saldo: values[4],
                             kvantitet: values[5],
                         };
@@ -234,15 +231,15 @@ var sieParser = /** @class */ (function () {
                         // TODO: Test this function wsith real SIE files
                         if (!sie.PBUDGET)
                             sie.PBUDGET = [];
-                        var _k = values[4]
+                        const [dimensionsnr, objektnr] = values[4]
                             .replace('"', ' ')
                             .trim()
-                            .split(' '), dimensionsnr = _k[0], objektnr = _k[1];
+                            .split(' ');
                         sie.PBUDGET.push({
                             årsnr: values[1],
                             period: values[2],
                             konto: values[3],
-                            objectspecifikation: { dimensionsnr: dimensionsnr, objektnr: objektnr },
+                            objectspecifikation: { dimensionsnr, objektnr },
                             saldo: values[5],
                             kvantitet: values[6],
                         });
@@ -261,17 +258,17 @@ var sieParser = /** @class */ (function () {
                     {
                         if (!sie.PSALDO)
                             sie.PSALDO = [];
-                        var _l = values[4]
+                        const [dimensionsnr, objektnr] = values[4]
                             .replace('"', ' ')
                             .trim()
-                            .split(' '), dimensionsnr = _l[0], objektnr = _l[1];
+                            .split(' ');
                         sie.PSALDO.push({
                             årsnr: values[1],
                             period: values[2],
                             konto: values[3],
                             objectspecifikation: {
                                 dimensionsnr: dimensionsnr !== '{}' ? dimensionsnr : undefined,
-                                objektnr: objektnr,
+                                objektnr,
                             },
                             saldo: values[5],
                             kvantitet: values[6],
@@ -338,36 +335,34 @@ var sieParser = /** @class */ (function () {
             }
         }
         return sie;
-    };
-    sieParser.prototype.getVerifications = function () {
-        var element = this.sieObject.VER;
+    }
+    getVerifications() {
+        const element = this.sieObject.VER;
         return Object.keys(element);
-    };
-    sieParser.prototype.getVerificationData = function (verification) {
-        var element = this.sieObject.VER[verification];
+    }
+    getVerificationData(verification) {
+        const element = this.sieObject.VER[verification];
         return element;
-    };
-    sieParser.prototype.getSeries = function (series) {
-        var _this = this;
-        var element = Object.keys(this.sieObject.VER).map(function (key) {
-            var e = _this.sieObject.VER[key];
+    }
+    getSeries(series) {
+        const element = Object.keys(this.sieObject.VER).map((key) => {
+            const e = this.sieObject.VER[key];
             if (e.serie === series.toUpperCase())
                 return e;
         });
-        var filteredElement = element.filter(function (e) { return e !== undefined; });
+        const filteredElement = element.filter((e) => e !== undefined);
         if (filteredElement.length === 0)
             return undefined;
         return filteredElement;
-    };
-    sieParser.prototype.getSerieDateRange = function (dateStart, dateEnd, opt) {
-        var _this = this;
+    }
+    getSerieDateRange(dateStart, dateEnd, opt) {
         if (dateStart.toString().length !== 8)
             throw Error('Invalid dateStart length');
         if (dateEnd.toString().length !== 8)
             throw Error('Invalid dateStart length');
-        var element = Object.keys(this.sieObject.VER).map(function (key) {
-            var e = _this.sieObject.VER[key];
-            var time = !(opt === null || opt === void 0 ? void 0 : opt.timeType) || opt.timeType !== 'regdatum'
+        const element = Object.keys(this.sieObject.VER).map((key) => {
+            const e = this.sieObject.VER[key];
+            const time = !(opt === null || opt === void 0 ? void 0 : opt.timeType) || opt.timeType !== 'regdatum'
                 ? Number(e.verdatum)
                 : Number(e.regdatum);
             if (!time)
@@ -382,36 +377,35 @@ var sieParser = /** @class */ (function () {
                 return e;
             }
         });
-        var filteredElement = element.filter(function (e) { return e !== undefined; });
+        const filteredElement = element.filter((e) => e !== undefined);
         if (filteredElement.length === 0)
             return undefined;
         return filteredElement;
-    };
-    sieParser.prototype.getAccount = function (kontonr, opts) {
+    }
+    getAccount(kontonr, opts) {
         var _a, _b, _c, _d;
         if (!kontonr) {
-            var element = this.sieObject.KONTO;
+            const element = this.sieObject.KONTO;
             return element;
         }
-        var returnObj = {};
+        let returnObj = {};
         kontonr = kontonr.toString();
-        var kontoDesc = (_a = this.sieObject.KONTO) === null || _a === void 0 ? void 0 : _a.find(function (e) { return e.kontonr === kontonr; });
+        const kontoDesc = (_a = this.sieObject.KONTO) === null || _a === void 0 ? void 0 : _a.find((e) => e.kontonr === kontonr);
         if (!kontoDesc)
             return undefined;
         if ((opts === null || opts === void 0 ? void 0 : opts.konto) !== false) {
-            returnObj = __assign({}, kontoDesc);
+            returnObj = Object.assign({}, kontoDesc);
         }
         if ((opts === null || opts === void 0 ? void 0 : opts.ib) !== false) {
-            returnObj.IB = (_b = this.sieObject.IB) === null || _b === void 0 ? void 0 : _b.filter(function (e) { return e.konto === kontonr; });
+            returnObj.IB = (_b = this.sieObject.IB) === null || _b === void 0 ? void 0 : _b.filter((e) => e.konto === kontonr);
         }
         if ((opts === null || opts === void 0 ? void 0 : opts.ub) !== false) {
-            returnObj.UB = (_c = this.sieObject.UB) === null || _c === void 0 ? void 0 : _c.filter(function (e) { return e.konto === kontonr; });
+            returnObj.UB = (_c = this.sieObject.UB) === null || _c === void 0 ? void 0 : _c.filter((e) => e.konto === kontonr);
         }
         if ((opts === null || opts === void 0 ? void 0 : opts.psaldo) !== false) {
-            returnObj.PSALDO = (_d = this.sieObject.PSALDO) === null || _d === void 0 ? void 0 : _d.filter(function (e) { return e.konto === kontonr; });
+            returnObj.PSALDO = (_d = this.sieObject.PSALDO) === null || _d === void 0 ? void 0 : _d.filter((e) => e.konto === kontonr);
         }
         return returnObj;
-    };
-    return sieParser;
-}());
+    }
+}
 module.exports = sieParser;

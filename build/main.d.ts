@@ -2,8 +2,7 @@ import { TypeSIE, TypeSIE_VER_EXPORT, TypeSIE_KONTO, TypeSIE_KONTO_EXPORT } from
 declare class sieParser {
     private sie;
     sieObject: TypeSIE;
-    constructor(path: string);
-    private string;
+    constructor(parsed: string);
     private sieLineParser;
     private sieLines;
     private parse;
