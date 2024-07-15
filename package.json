@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npx tsc",
     "dev": "nodemon",
-    "dev:test": "nodemon src/test.ts"
+    "dev:test": "nodemon src/test.js"
   },
   "keywords": [
     "sie",
